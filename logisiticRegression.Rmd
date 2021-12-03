@@ -10,6 +10,7 @@ knitr::opts_chunk$set(echo = TRUE)
 ## R Markdown
 
 ```{r}
+library(tidyverse)
 mvp <- read.csv("nbamvp.csv")
 player_stats <- read.csv("all_nba_team.csv")
 player_stats <- player_stats %>%
@@ -119,4 +120,29 @@ binnedplot(fitted(logistic_lr),
            col.int = "gray")
 ```
 The grey lines represent  ±  2 SE bands, which we would expect to contain about 95% of the observations. This model looks somewhat reasonable as the that majority of the fitted values seem to fall within the SE bands. There are some fitted values, mainly the ones under 0.1, that seem to be outside the SE bands. Another thing to notice is that all of the outliers are negative which seems to sugest that the model is actually predicitng a higher rate of MVPs than is actually the case. 
+
+
+
+
+## K-means Clustering
+
+
+```{r}
+
+mvp_colors <- c("red", "blue")[unclass(as.factor(player_stats$MVP))]
+pairs(player_stats[,5:9], col=mvp_colors)
+
+```
+
+Here we have a pairs plot showing a bunch of relationships between different player statistics, with coloring to represent which data points are mvp seasons, and which are not. Just from a first look, it appears as if there is not a clear cluster of mvps in any of the relationships. Regardless, we will press on and see if k-means clustering can pick out which points are mvps.
+
+```{r}
+
+k_mvp <- kmeans(player_stats[,5:9], centers = 2, nstart = 50)
+k_mvp_colors <- c("red", "blue")[k_mvp$cluster]
+pairs(player_stats[,5:9], col = k_mvp_colors)
+
+```
+
+Based on the observations of the last plot, the kmeans clustering was extremely ineffective at determining mvp seasons, because they lacked a clear pattern. Therefore these plots are unlikely to make it into our final draft.
 
