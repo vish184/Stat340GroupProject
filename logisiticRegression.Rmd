@@ -1,0 +1,122 @@
+---
+title: "Stat340 Progress V2"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+
+```{r}
+mvp <- read.csv("nbamvp.csv")
+player_stats <- read.csv("all_nba_team.csv")
+player_stats <- player_stats %>%
+  mutate(Year = ï..YEAR)
+head(player_stats)
+```
+
+```{r}
+logistic_lr <- glm(MVP ~ 1 + FG. + PPG + RPG + APG + BLKPG, data = player_stats, family = 'binomial')
+summary(logistic_lr)
+```
+
+After doing some research online, I found out that normal residual plot are not very useful for logistic regression. It is much better to use a binned residual plot. I copied and pasted the binned plot function below as I couldn't get the 'arm' package which is where binned plot is located to install.
+
+```{r}
+binnedplot <- function(x, y, nclass=NULL,
+    xlab="Expected Values", ylab="Average residual",
+    main="Binned residual plot",
+    cex.pts=0.8, col.pts=1, col.int="gray", ...)
+{
+
+    n <- length(x)
+    if (is.null(nclass)){
+        if (n >= 100){
+            nclass=floor(sqrt(length(x)))
+        }
+        if (n > 10 & n < 100){
+            nclass=10
+        }
+        if (n <=10){
+            nclass=floor(n/2)
+        }
+    }
+
+    aa <- data.frame(binned.resids (x, y, nclass)$binned)
+    plot(range(aa$xbar), range(aa$ybar, aa$X2se, -aa$X2se, na.rm=TRUE),
+        xlab=xlab, ylab=ylab, type="n", main=main, ...)
+    abline (0,0, lty=2)
+    lines (aa$xbar, aa$X2se, col=col.int)
+    lines (aa$xbar, -aa$X2se, col=col.int)
+    points (aa$xbar, aa$ybar, pch=19, cex=cex.pts, col=col.pts)
+}
+
+binned.resids <- function (x, y, nclass=floor(sqrt(length(x)))){
+
+    breaks.index <- floor(length(x)*(1:(nclass-1))/nclass)
+    if(any(breaks.index==0)) nclass <- 1
+    x.sort <- sort(x)
+    breaks <- -Inf
+    if(nclass > 1){
+      for (i in 1:(nclass-1)){
+        x.lo <- x.sort[breaks.index[i]]
+        x.hi <- x.sort[breaks.index[i]+1]
+        if (x.lo==x.hi){
+            if (x.lo==min(x)){
+                x.lo <- -Inf
+            }
+            else {
+                x.lo <- max (x[x<x.lo])
+            }
+        }
+        breaks <- c (breaks, (x.lo + x.hi)/2)
+      }
+    }else if(nclass ==1){
+      x.lo <- min(x)
+      x.hi <- max(x)
+      breaks <- c (breaks, (x.lo + x.hi)/2)
+    }
+
+    breaks <- c (breaks, Inf)
+    breaks <- unique(breaks)
+    nclass <- length(breaks) - 1
+    output <- NULL
+    xbreaks <- NULL
+    x.binned <- as.numeric (cut (x, breaks))
+
+    for (i in 1:nclass){
+        items <- (1:length(x))[x.binned==i]
+        x.range <- range(x[items])
+        xbar <- mean(x[items])
+        ybar <- mean(y[items])
+        n <- length(items)
+        #p <- xbar
+        #sdev <- sd(y[items])
+        sdev <- if(length(y[items]) > 1) sd(y[items]) else 0
+        output <- rbind (output, c(xbar, ybar, n, x.range, 2*sdev/sqrt(n)))
+
+    }
+
+    colnames (output) <- c("xbar", "ybar", "n", "x.lo", "x.hi", "2se")
+    #output <- output[output[,"sdev"] != 0,]
+    return (list (binned=output, xbreaks=xbreaks))
+}
+```
+
+
+```{r}
+library(ISLR)
+binnedplot(fitted(logistic_lr), 
+           residuals(logistic_lr, type = "response"), 
+           nclass = NULL, 
+           xlab = "Expected Values", 
+           ylab = "Average residual", 
+           main = "Binned residual plot", 
+           cex.pts = 0.8, 
+           col.pts = 1, 
+           col.int = "gray")
+```
+The grey lines represent  ±  2 SE bands, which we would expect to contain about 95% of the observations. This model looks somewhat reasonable as the that majority of the fitted values seem to fall within the SE bands. There are some fitted values, mainly the ones under 0.1, that seem to be outside the SE bands. Another thing to notice is that all of the outliers are negative which seems to sugest that the model is actually predicitng a higher rate of MVPs than is actually the case. 
+
