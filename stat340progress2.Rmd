@@ -1,0 +1,248 @@
+---
+title: "STAT 340 Group Project NBA MVP"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(ggplot2)
+library(dplyr)
+library(tidyverse)
+```
+
+
+**Names:**
+Vishnu Yarlagadda (9078073161)
+Andrew Olson (9079183050)
+Jake Goecke (9079018827)
+Nikolas Brendel (9080659643)
+
+**Dataset:**
+NBA MVP statistics.
+ https://www.basketball-reference.com/awards/mvp.html
+We will then also use the MVP winners dataset which just lists the NBA MVP of each year to be able to actually tell which player was MVP for each respective season. 
+
+#NO LONGER NEED?
+NBA Player Stats for the the 2000-2021 Seasons.
+https://www.basketball-reference.com/leagues/NBA_2021_totals.html?sr&utm_source=direct&utm_medium=Share&utm_campaign=ShareTool#totals_stats
+This dataset gives all of the statistics of every single NBA player from 2000. We can look at the total points scored, free throw percentage, age, and any other relevant statistic. 
+
+**Question(s):**
+Can you predict the regular season MVP from the all-NBA roster based on (points, rebounds, assists, PPG, etc.)?
+Which statistic is most influential in picking a regular season MVP?
+
+**Variables - MVP:**
+Variables:
+year - Year they played
+name/Player - Name of the player.
+positions - Position the player plays, can be SF, SG, PF, PG, or C.
+age/Age - Age of the player.
+team/Tm  -  The team the player plays for, traded players will have multiple rows for each team they were a part of.
+games_played -  Number of games the player played in.
+games_started - The number of games the player was a starter in.
+minutes_played/MP - The total number of minutes the player was on the court.
+made_field_goals - The total number of field goals made in the season.
+attempted_field_goals - The total number of field goals attempted in the season.
+made_three_point_field_goals - The total number of 3-point shots in the season.
+attempted_three_point_field_goals - The total number of 3-point shots attempted in the season.
+made_free_throws - The total number of free throws in the season
+attempted_free_throws - The total number of free throws attempted in the season.
+offensive_rebounds - The number of offensive rebounds in the season.
+defensive_rebounds - The number of defensive rebounds in the season.
+assists/AST - The total number of assists in the season.
+steals/STL - The total number of steals in the season.
+blocks/BLK - The total number of blocks in the season.
+turnovers - The total number of turnovers in the season.
+personal_fouls - The total number of person fouls in the season.
+points - The total number of points scored in the season.
+Season - The years in which the season took place.
+G - The number of games the player played that season.
+PTS - The points per game scored by that player.
+FG. - Total field goal percentage for the season.
+FT. - Total free throw percentage for the season.
+
+**Data**
+This R-chunk loads in the tables that we need.
+```{r}
+mvp <- read.csv("nbamvp.csv")
+player_stats <- read.csv("all_nba_team.csv")
+player_stats <- player_stats %>%
+  mutate(year = ï..YEAR, MVP = case_when(PLAYER == "Allen Iverson" & year == 2001 ~ TRUE, PLAYER == "Tim Duncan" & year == 2002 ~ TRUE, PLAYER == "Tim Duncan" & year == 2003 ~ TRUE, PLAYER == "Kevin Garnett" & year == 2004 ~ TRUE, PLAYER == "Steve Nash" & year == 2005 ~ TRUE, PLAYER == "Steve Nash" & year == 2006 ~ TRUE, PLAYER == "Dirk Nowitzki" & year == 2007 ~ TRUE, PLAYER == "Kobe Bryant" & year == 2008 ~ TRUE, PLAYER == "LeBron James" & year == 2009 ~ TRUE, PLAYER == "LeBron James" & year == 2010 ~ TRUE, PLAYER == "Derrick Rose" & year == 2011 ~ TRUE, PLAYER == "LeBron James" & year == 2012 ~ TRUE, PLAYER == "LeBron James" & year == 2013 ~ TRUE, PLAYER == "Kevin Durant" & year == 2014 ~ TRUE, PLAYER == "Stephen Curry" & year == 2015 ~ TRUE, PLAYER == "Stephen Curry" & year == 2016 ~ TRUE, PLAYER == "Russell Westbrook" & year == 2017 ~ TRUE, PLAYER == "James Harden" & year == 2018 ~ TRUE, PLAYER == "Giannis Antetokounmpo" & year == 2019 ~ TRUE, PLAYER == "Giannis Antetokounmpo" & year == 2020 ~ TRUE, PLAYER == "Nikola Jokic" & year == 2021 ~ TRUE, TRUE ~ as.logical(FALSE)))
+head(player_stats)
+#player_stats <- read.csv("2000-2021NBAStats.csv")
+head(mvp)
+#head(player_stats)
+```
+```{R}
+mvp <- mvp %>%
+  mutate(Player = case_when(Player == "Nikola Joki?" ~ "Nikola Jokic", TRUE ~ as.character(Player)))
+mvp
+```
+```{R}
+#player_stats <- player_stats %>%
+#  mutate(name = case_when(name == "Nikola JokiÄ‡" ~ "Nikola Jokic", TRUE ~ as.character(name)))
+```
+
+```{R}
+#player_stats <- player_stats %>%
+#  mutate(mvp = case_when(name == "Allen Iverson" & year == 2001 ~ TRUE, name == "Tim Duncan" & year == 2002 ~ TRUE, name == "Tim Duncan" & year == 2003 ~ TRUE, name == "Kevin Garnett" & year == 2004 ~ TRUE, name == "Steve Nash" & year == 2005 ~ TRUE, name == "Steve Nash" & year == 2006 ~ TRUE, name == "Dirk Nowitzki" & year == 2007 ~ TRUE, name == "Kobe Bryant" & year == 2008 ~ TRUE, name == "LeBron James" & year == 2009 ~ TRUE, name == "LeBron James" & year == 2010 ~ TRUE, name == "Derrick Rose" & year == 2011 ~ TRUE, name == "LeBron James" & year == 2012 ~ TRUE, name == "LeBron James" & year == 2013 ~ TRUE, name == "Kevin Durant" & year == 2014 ~ TRUE, name == "Stephen Curry" & year == 2015 ~ TRUE, name == "Stephen Curry" & year == 2016 ~ TRUE, name == "Russell Westbrook" & year == 2017 ~ TRUE, name == "James Harden" & year == 2018 ~ TRUE, name == "Giannis Antetokounmpo" & year == 2019 ~ TRUE, name == "Giannis Antetokounmpo" & year == 2020 ~ TRUE, name == "Nikola Jokic" & year == 2021 ~ TRUE, TRUE ~ as.logical(FALSE)))
+#player_stats
+```
+
+**Analysis**
+Out of curiosity, we decided to look at the different per game stats of MVP winners in our data. The results are shown in the tables below.
+```{r}
+library(ggplot2)
+ggplot(mvp, aes(x = Season, y = MP)) + geom_point() + theme(axis.text.x=element_text(angle=80, hjust=1)) + ggtitle("Minutes Per Game of MVP Winners in the Past") + xlab("Seasons") + ylab("Minutes Per Game")
+```
+
+This plot basically shows the average minutes per game of MVP winners from 2000 to 2021. It looks like the average minutes per game is trending downwards and that is a little surprising because that means MVP winners are playing less per game in recent years than before. We all would have expected that MVP winners are playing the same amount of time if not more when compared to the past but looks like that's not the case. One possible reason could be that there's been more focus on the health of star players recently, so teams are pulling them out of games in order to not risk an injury. 
+
+```{r}
+ggplot(mvp, aes(x = Season, y = PTS)) + geom_point() + theme(axis.text.x=element_text(angle=80, hjust=1)) + ggtitle("Points Per Game of MVP Winners in the Past") + xlab("Seasons") + ylab("Points Per Game")
+```
+From this plot it looks like points per game of an mvp has been roughly trending up however it hasn't changed much. A majority of the mvps have averaged above 25 points per game which tells us that scoring is a very important factor of being an MVP.
+
+```{r}
+ggplot(mvp, aes(x = Season, y = AST)) + geom_point() + theme(axis.text.x=element_text(angle=80, hjust=1)) + ggtitle("Assists Per Game of MVP Winners in the Past") + xlab("Seasons") + ylab("Assists Per Game")
+```
+Overall the assist data is pretty varied however a few outlier points of 10+ assists per game shows up that it may be possible to negate a lack of scoring with play making abilities. 
+
+```{r}
+ggplot(mvp, aes(x = Season, y = TRB)) + geom_point() + theme(axis.text.x=element_text(angle=80, hjust=1)) + ggtitle("Rebounds Per Game of MVP Winners in the Past") + xlab("Seasons") + ylab("Rebounds Per Game")
+```
+Rebounding data is probably the most varied from all the data we have looked at so far. We can attribute this to position and height most likely because it is less important for small guards to get rebounds rather than large big men. 
+
+```{r}
+logistic_lr <- glm(MVP ~ 1 + FG. + PPG + RPG + APG + BLKPG, data = player_stats, family = 'binomial')
+summary(logistic_lr)
+```
+
+After doing some research online, I found out that normal residual plot are not very useful for logistic regression. It is much better to use a binned residual plot. I copied and pasted the binned plot function below as I couldn't get the 'arm' package which is where binned plot is located to install.
+
+```{r}
+binnedplot <- function(x, y, nclass=NULL,
+    xlab="Expected Values", ylab="Average residual",
+    main="Binned residual plot",
+    cex.pts=0.8, col.pts=1, col.int="gray", ...)
+{
+
+    n <- length(x)
+    if (is.null(nclass)){
+        if (n >= 100){
+            nclass=floor(sqrt(length(x)))
+        }
+        if (n > 10 & n < 100){
+            nclass=10
+        }
+        if (n <=10){
+            nclass=floor(n/2)
+        }
+    }
+
+    aa <- data.frame(binned.resids (x, y, nclass)$binned)
+    plot(range(aa$xbar), range(aa$ybar, aa$X2se, -aa$X2se, na.rm=TRUE),
+        xlab=xlab, ylab=ylab, type="n", main=main, ...)
+    abline (0,0, lty=2)
+    lines (aa$xbar, aa$X2se, col=col.int)
+    lines (aa$xbar, -aa$X2se, col=col.int)
+    points (aa$xbar, aa$ybar, pch=19, cex=cex.pts, col=col.pts)
+}
+
+binned.resids <- function (x, y, nclass=floor(sqrt(length(x)))){
+
+    breaks.index <- floor(length(x)*(1:(nclass-1))/nclass)
+    if(any(breaks.index==0)) nclass <- 1
+    x.sort <- sort(x)
+    breaks <- -Inf
+    if(nclass > 1){
+      for (i in 1:(nclass-1)){
+        x.lo <- x.sort[breaks.index[i]]
+        x.hi <- x.sort[breaks.index[i]+1]
+        if (x.lo==x.hi){
+            if (x.lo==min(x)){
+                x.lo <- -Inf
+            }
+            else {
+                x.lo <- max (x[x<x.lo])
+            }
+        }
+        breaks <- c (breaks, (x.lo + x.hi)/2)
+      }
+    }else if(nclass ==1){
+      x.lo <- min(x)
+      x.hi <- max(x)
+      breaks <- c (breaks, (x.lo + x.hi)/2)
+    }
+
+    breaks <- c (breaks, Inf)
+    breaks <- unique(breaks)
+    nclass <- length(breaks) - 1
+    output <- NULL
+    xbreaks <- NULL
+    x.binned <- as.numeric (cut (x, breaks))
+
+    for (i in 1:nclass){
+        items <- (1:length(x))[x.binned==i]
+        x.range <- range(x[items])
+        xbar <- mean(x[items])
+        ybar <- mean(y[items])
+        n <- length(items)
+        #p <- xbar
+        #sdev <- sd(y[items])
+        sdev <- if(length(y[items]) > 1) sd(y[items]) else 0
+        output <- rbind (output, c(xbar, ybar, n, x.range, 2*sdev/sqrt(n)))
+
+    }
+
+    colnames (output) <- c("xbar", "ybar", "n", "x.lo", "x.hi", "2se")
+    #output <- output[output[,"sdev"] != 0,]
+    return (list (binned=output, xbreaks=xbreaks))
+}
+```
+
+
+```{r}
+library(ISLR)
+binnedplot(fitted(logistic_lr), 
+           residuals(logistic_lr, type = "response"), 
+           nclass = NULL, 
+           xlab = "Expected Values", 
+           ylab = "Average residual", 
+           main = "Binned residual plot", 
+           cex.pts = 0.8, 
+           col.pts = 1, 
+           col.int = "gray")
+```
+The grey lines represent  ±  2 SE bands, which we would expect to contain about 95% of the observations. This model looks somewhat reasonable as the that majority of the fitted values seem to fall within the SE bands. There are some fitted values, mainly the ones under 0.1, that seem to be outside the SE bands. Another thing to notice is that all of the outliers are negative which seems to suggest that the model is actually predicting a higher rate of MVPs than is actually the case. 
+
+
+
+
+## K-means Clustering
+
+
+```{r}
+
+mvp_colors <- c("red", "blue")[unclass(as.factor(player_stats$MVP))]
+pairs(player_stats[,5:9], col=mvp_colors)
+
+```
+
+Here we have a pairs plot showing a bunch of relationships between different player statistics, with coloring to represent which data points are mvp seasons, and which are not. Just from a first look, it appears as if there is not a clear cluster of mvps in any of the relationships. Regardless, we will press on and see if k-means clustering can pick out which points are MVPs.
+
+```{r}
+
+k_mvp <- kmeans(player_stats[,5:9], centers = 2, nstart = 50)
+k_mvp_colors <- c("red", "blue")[k_mvp$cluster]
+pairs(player_stats[,5:9], col = k_mvp_colors)
+
+```
+
+Based on the observations of the last plot, the kmeans clustering was extremely ineffective at determining mvp seasons, because they lacked a clear pattern. Therefore these plots are unlikely to make it into our final draft.
+
+**Progress and Challenges**
+One of the challenges we faced was that our initial question may be too easy or too difficult to answer. This will lead to use having to evaluate our question given the data and maybe change it. Overall, downloading and cleaning the data went relatively smoothly since the data sets that we used have been pretty well set up to be moved into a data frame format. For now we just used some plots to see where some correlation lies between certain stats and MVP winners over the years. 
+
+**Next Steps**
+For our next steps we want to evaluate and tweak our question a little bit just to be able to fit better models. We also want to possibly do a linear regression and logistical regression in order to help us get a better predictor. 
