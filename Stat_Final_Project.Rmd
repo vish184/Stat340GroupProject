@@ -1,0 +1,16 @@
+---
+title: "Final Project"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(tidyverse)
+player_stats_2021_2022 <- read.csv("2021-2022_player_stats.csv")
+player_salaries_2021_2022 <- read.csv("2021-2022_player_salaries.csv")
+player_stats_2021_2022
+```
+
