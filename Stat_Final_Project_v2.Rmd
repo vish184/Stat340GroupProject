@@ -1,0 +1,66 @@
+---
+title: "Final Project"
+output: html_document
+---
+
+```{R setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(dplyr)
+```
+
+The following block reads in the data sets containing player statistics and salaries for the 2019-2020 and 2020-2021 seasons. It also changes a few variable names to ensure they match for the join.
+
+```{R}
+player_stats_2019_20 <- read.csv("2019-20_player_stats.csv")
+player_salaries_2019_20 <- read.csv("2019-20_player_salaries.csv")
+player_stats_2019_20
+colnames(player_salaries_2019_20)[3] <- "Player"
+player_salaries_2019_20
+
+player_stats_2020_21 <- read.csv("2020-21_player_stats.csv")
+player_salaries_2020_21 <- read.csv("2020-21_player_salaries.csv")
+player_stats_2020_21
+colnames(player_salaries_2020_21)[3] <- "salary"
+player_salaries_2020_21
+```
+
+The following code joins the player statistics and player salary data sets into one data frame by different years. It also removes the cases where players were traded in the middle of the season to prevent any duplicate salary information from being included.
+
+```{R}
+merged_2019_20 <- merge(player_salaries_2019_20, player_stats_2019_20, by = 'Player')
+merged_2019_20 <- merged_2019_20 %>%
+  distinct(Player, .keep_all = TRUE)
+
+merged_2020_21 <- merge(player_salaries_2020_21, player_stats_2020_21, by = 'Player')
+merged_2020_21 <- merged_2020_21 %>%
+  distinct(Player, .keep_all = TRUE)
+  
+```
+
+The following code divides our tables into 3 different sets. We will train our multiple-regression model on the 2019-2020 season. The train data frame will additionally be divided into a dev data frame to compare with our test data frame to make sure our multiple-regression model remains consistent over different data frames. We also end up using the 2020-2021 season as our test data frame.
+
+```{R}
+data_split <- sort(sample(nrow(merged_2019_20), nrow(merged_2019_20)*0.8))
+train <- merged_2019_20[data_split,]
+dev <- merged_2019_20[-data_split,]
+test <- merged_2020_21
+```
+
+Here we create our multiple-regression model.
+
+```{R}
+model <- lm(salary ~ Age + G + GS + BLK + TOV + PF + PTS, train)
+summary(model)
+```
+
+Based on the variables provided on the players, without using their names, we are able to achieve an R-squared value of **0.5814**. The most important variables are "Age", "PTS", and "G". This makes sense as younger players lack experience that would make them more valuable to the team and older players are more likely to have a harder time keeping up with the speed of the game. As for points, it is pretty self explanatory as players who score more points are more valuable to their team. Additionally, games played is important because a team does not want to pay a player that doesn't play.
+
+Now we will predict on our dev data frame and test data frame.
+
+```{R}
+dev_predictions <- predict(model, newdata = dev)
+test_predictions <- predict(model, newdata = test)
+```
+
+
