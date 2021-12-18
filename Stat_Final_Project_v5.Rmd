@@ -154,7 +154,7 @@ There is a clear upward trend in the red line which reaffirms our previous state
 plot(model, which = 2)
 ```
 
-We observe heavier tails in this graph which tells us that the model has larger values that we would expect under the standard modeling assumptions. But, it looks like normality assumption is still valid. 
+We observe heavier tails in this graph which tells us that the model has larger values that we would expect under the standard modeling assumptions. But, it looks like the normality assumption is still valid. 
 
 It is now clear that our model is not very good, so we have to resort to other methods. Our original plan was to use ridge regression to achieve a better model but an assumption of ridge regression is constant variance so we cannot use it. Lasso regression also has the same assumptions so we cannot use that one either. We had to resort to some online research and we found a method to achieve a linear model with non-constant variances. We found out that the technical term for non-constant variance is heteroskedasticity. We found a good resource to solve this problem and I have provided the link below:
 http://bkenkel.com/psci8357/notes/05-ncv.html
