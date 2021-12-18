@@ -170,7 +170,7 @@ library("broom")
 modelv2 <- coeftest(model, vcov = vcv0)
 modelv2
 ```
-This model know has accounted for the heteroskedasticity and it shows very little difference between our initial model. Therefore, we can now perform the predictions on the initial model. 
+This model know has accounted for the heteroskedasticity. One thing we noticed was that the estimates for the modified model were exactly the same as our orignal multiple linear regression model. So, we decided to just use the original model for our predictions as we could use the 'predict' command to make our lives much easier. 
 
 
 Now we will predict on our dev data frame and test data frame. Once the predictions are made, we will determine the accuracy of the model by seeing how many of the actual values fall within the 95% prediction interval.
