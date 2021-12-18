@@ -1,0 +1,165 @@
+---
+title: "Final Project"
+output:
+  html_document: default
+  pdf_document: default
+---
+
+```{R setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(dplyr)
+```
+
+**Names**
+
+* Vishnu Yarlagadda (9078073161) 
+* Nikolas Brendel (9080659643) 
+* Andrew Olson (9079183050) 
+* Jake Goecke (9079018827)
+
+**Abstract**
+
+The data we have selected for our group project is player statistics from the National Basketball League(NBA). This data includes everything from game statistics like points per game, all the way to categorical variables, like team or position. For our model we chose mostly game statistics, with the notable exception of age. With this data we hoped to discover if we could use the player statistics and salaries from one season to predict salaries for another season. In order to do this we used multiple regression on statistics from the 2019-2020 season, and then predicted on the 2020-2021 season. Despite initially finding a very poor R-squared value, we pressed on and corrected for heteroscedasticity. When then using a development set and a test set, we showed our model to be about 95% accurate in predicting player salaries.
+
+**Introduction**
+
+The NBA is one of the most popular sports leagues in the world. Not just the US, but many other countries follow the NBA closely. This attention leads to a lot of income for the NBA. A good portion of that income goes into paying the players that are a part of the NBA and its teams.
+
+This goal of this project is to attempt to predict NBA player's salary based on their individual statistics. We will be using data from the 2019-2020 season to attempt to accurately predict the salaries from the 2020-2021 season.
+
+This research is important because if it succeeds, it may be a tool that helps teams determine how much to pay certain players in the future. That could enable teams to put together the best possible team and get the most out of their limited money each season.
+
+**Data Resources**
+
+**Variables**
+
+There are several variables in the data set. For simplicity, we will only describe those that we used.
+
+* Player - The player's name
+* salary - The amount in USD that the player will be paid for the season
+* Age  - The player's age in years at the start of the season
+* G - The number of games played
+* GS - The number of games started
+* BLK - The average blocks per game
+* TOV - The average turnovers per game
+* PF - The average of fouls committed per game
+* PTS - The average total points per game
+
+**Data Calculations**
+
+The following block reads in the data sets containing player statistics and salaries for the 2019-2020 and 2020-2021 seasons. It also changes a few variable names to ensure they match for the join.
+
+```{R}
+player_stats_2019_20 <- read.csv("2019-20_player_stats.csv")
+player_salaries_2019_20 <- read.csv("2019-20_player_salaries.csv")
+colnames(player_salaries_2019_20)[3] <- "Player"
+
+player_stats_2020_21 <- read.csv("2020-21_player_stats.csv")
+player_salaries_2020_21 <- read.csv("2020-21_player_salaries.csv")
+colnames(player_salaries_2020_21)[3] <- "salary"
+```
+
+The following code joins the player statistics and player salary data sets into one data frame by different years. It also removes the cases where players were traded in the middle of the season to prevent any duplicate salary information from being included. Then it shows the first few rows of the data.
+
+```{R}
+merged_2019_20 <- merge(player_salaries_2019_20, player_stats_2019_20, by = 'Player')
+merged_2019_20 <- merged_2019_20 %>%
+  distinct(Player, .keep_all = TRUE)
+head(merged_2019_20)
+
+merged_2020_21 <- merge(player_salaries_2020_21, player_stats_2020_21, by = 'Player')
+merged_2020_21 <- merged_2020_21 %>%
+  distinct(Player, .keep_all = TRUE)
+head(merged_2020_21)
+```
+
+The following code divides our tables into 3 different sets. We will train our multiple-regression model on the 2019-2020 season. The train data frame will additionally be divided into a dev data frame to compare with our test data frame to make sure our multiple-regression model remains consistent over different data frames. We also end up using the 2020-2021 season as our test data frame.
+
+```{R}
+data_split <- sort(sample(nrow(merged_2019_20), nrow(merged_2019_20)*0.8))
+train <- merged_2019_20[data_split,]
+dev <- merged_2019_20[-data_split,]
+test <- merged_2020_21
+```
+
+Here we create our multiple-regression model.
+
+```{R}
+model <- lm(salary ~ 1 + Age + G + GS + BLK + TOV + PF + PTS, train)
+```
+
+Based on the variables provided on the players, without using their names, we are able to achieve an R-squared value of **0.5622**. The most important variables are "Age", "PTS", and "G". This makes sense as younger players lack experience that would make them more valuable to the team and older players are more likely to have a harder time keeping up with the speed of the game. As for points, it is pretty self explanatory as players who score more points are more valuable to their team. Additionally, games played is important because a team does not want to pay a player that doesn't play.
+
+As the primary goal of this model is to predict the salary variable, we can use the R-squared statistic to analyze how good the model. It is clear that a R-squared of **0.5622** is not very good. In addition, if we look at the model diagnostics, it becomes pretty clear that our current model is not very good. The first one we will look at is the Residual vs Fitted plot. 
+
+```{r}
+plot(model, which = 1)
+```
+
+You can see that there is a "funneling" effect on the graph. The distribution of the residuals is concentrated around 0 for small fitted values, but they get more and more spread out as the fitted values increase. This phenomena is called increasing variance. And, the Scale-Location graph also confirms this below. 
+
+```{r}
+plot(model, which = 3)
+```
+
+There is a clear upward trend in the red line which reaffirms our previous statement that the model has non-constant variance. One more thing that we should look at is the Normal QQ plot which lets us assess whether the residuals are normally distributed. 
+
+```{r}
+plot(model, which = 2)
+```
+
+We observe heavier tails in this graph which tells us that the model has larger values that we would expect under the standard modeling assumptions. But, it looks like normality assumption is still valid. 
+
+It is now clear that our model is not very good, so we have to resort to other methods. Our original plan was to use ridge regression to achieve a better model but an assumption of ridge regression is constant variance so we cannot use it. Lasso regression also has the same assumptions so we cannot use that one either. We had to resort to some online research and we found a method to achieve a linear model with non-constant variances. We found out that the technical term for non-constant variance is heteroskedasticity. We found a good resource to solve this problem and I have provided the link below:
+http://bkenkel.com/psci8357/notes/05-ncv.html
+
+The resource tells us that in order to solve heteroskedasticity of an unknown form we can use something called White’s heteroskedasticity-consistent estimator which is what we did below
+
+```{r}
+library(car)
+library(lmtest)
+vcv0 <- hccm(model, type = "hc0")
+
+library("broom")
+modelv2 <- coeftest(model, vcov = vcv0)
+modelv2
+```
+This model know has accounted for the heteroskedasticity and it shows very little difference between our initial model. Therefore, we can now perform the predictions on the initial model. 
+
+
+Now we will predict on our dev data frame and test data frame. Once the predictions are made, we will determine the accuracy of the model by seeing how many of the actual values fall within the 95% prediction interval.
+
+```{R}
+dev_predictions <- predict(model, newdata = dev, interval = "prediction")
+dev_predictions <- as.data.frame(dev_predictions)
+mean(dev_predictions$lwr <= dev$salary & dev$salary <= dev_predictions$upr)
+test_predictions <- predict(model, newdata = test, interval = "prediction")
+test_predictions <- as.data.frame(test_predictions)
+mean(test_predictions$lwr <= test$salary & test$salary <= test_predictions$upr)
+```
+
+Based on our model and our predictions, we can accurately predict at a rate of approximately 0.94. Compare this to our dev rate of approximately 0.92 and these value match well.
+
+The following code will graph our predictions, actual values, linear model, and the 95% prediction intervals for both our dev data and our test data.
+
+```{R}
+library("ggplot2")
+devbind <- cbind(dev, dev_predictions)
+devplot <- ggplot(devbind, aes(1 + Age + G + GS + BLK + TOV + PF + PTS, salary)) +
+  geom_point() +
+  stat_smooth(method = lm)
+devplot + geom_line(aes(y = lwr), color = "red", linetype = "dashed") +
+    geom_line(aes(y = upr), color = "red", linetype = "dashed")
+
+testbind <- cbind(test, test_predictions)
+testplot <- ggplot(testbind, aes(1 + Age + G + GS + BLK + TOV + PF + PTS, salary)) +
+  geom_point() +
+  stat_smooth(method = lm)
+testplot + geom_line(aes(y = lwr), color = "red", linetype = "dashed") +
+    geom_line(aes(y = upr), color = "red", linetype = "dashed")
+```
+
+**Conclusion**
+
+To conclude, we were able to fit a model that predicted player salaries for the 2020-2021 season with about 95% accuracy. However, this is likely due to the proximity of the train and test sets, and NBA salaries have been rising for many years now. Unfortunately, our model does not test on any other seasons, and would likely perform much worse on a season from even five years ago. With that being said, something we could research in the future is attempting to fit the model across multiple years, and using year as a predictor. Despite this, our model was still successful for what we set out to do. 
